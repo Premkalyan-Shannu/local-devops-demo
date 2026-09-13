@@ -1,0 +1,22 @@
+@'
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: demo-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/limit-rps: "3"
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: "1"
+spec:
+  rules:
+  - host: myapp.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: demo-service
+            port:
+              number: 80
+'@ | Out-File -FilePath k8s\ingress.yaml -Encoding utf8
