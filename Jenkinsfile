@@ -15,21 +15,17 @@ pipeline {
         }
 
         stage('Build Docker Image') {
-            steps {
-                sh """
-                    echo "Building Docker image ${APP_NAME}:${IMAGE_TAG}..."
-                    docker build -t ${APP_NAME}:${IMAGE_TAG} .
-                    docker tag ${APP_NAME}:${IMAGE_TAG} ${APP_NAME}:latest
+    steps {
+        sh """
+            echo "Building Docker image ${APP_NAME}:${IMAGE_TAG}..."
+            docker build -t ${APP_NAME}:${IMAGE_TAG} .
+            docker tag ${APP_NAME}:${IMAGE_TAG} ${APP_NAME}:latest
 
-                    echo "Saving and importing image into Minikube containerd cache..."
-                    docker save -o /tmp/${APP_NAME}-${IMAGE_TAG}.tar ${APP_NAME}:${IMAGE_TAG}
-                    docker cp /tmp/${APP_NAME}-${IMAGE_TAG}.tar minikube:/tmp/app.tar
-                    docker exec minikube ctr -n k8s.io images import /tmp/app.tar
-                    rm -f /tmp/${APP_NAME}-${IMAGE_TAG}.tar
-                    docker exec minikube rm -f /tmp/app.tar
-                """
-            }
-        }
+            echo "Streaming image directly into Minikube containerd..."
+            docker save ${APP_NAME}:${IMAGE_TAG} | docker exec -i minikube ctr -n k8s.io images import -
+        """
+    }
+}
 
         stage('Deploy to Kubernetes') {
             when {
