@@ -1,7 +1,6 @@
-@'
 const express = require('express');
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 3000;
 
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'UP', timestamp: new Date() });
@@ -17,7 +16,6 @@ app.get('/compute', (req, res) => {
   res.send(`Computed sum. Load applied by Pod: ${process.env.HOSTNAME}`);
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server listening on port ${PORT}`);
 });
-'@ | Out-File -FilePath server.js -Encoding utf8
