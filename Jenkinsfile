@@ -9,17 +9,24 @@ pipeline {
     stages {
         stage('Unit Test') {
             steps {
-                echo 'Running unit tests...'
+                sh 'echo "Running unit test..."'
                 sh 'node test.js || true'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                echo 'Building Docker image...'
                 sh """
+                    echo "Building Docker image ${APP_NAME}:${IMAGE_TAG}..."
                     docker build -t ${APP_NAME}:${IMAGE_TAG} .
                     docker tag ${APP_NAME}:${IMAGE_TAG} ${APP_NAME}:latest
+
+                    echo "Saving and importing image into Minikube containerd cache..."
+                    docker save -o /tmp/${APP_NAME}-${IMAGE_TAG}.tar ${APP_NAME}:${IMAGE_TAG}
+                    docker cp /tmp/${APP_NAME}-${IMAGE_TAG}.tar minikube:/tmp/app.tar
+                    docker exec minikube ctr -n k8s.io images import /tmp/app.tar
+                    rm -f /tmp/${APP_NAME}-${IMAGE_TAG}.tar
+                    docker exec minikube rm -f /tmp/app.tar
                 """
             }
         }
@@ -29,7 +36,6 @@ pipeline {
                 branch 'main'
             }
             steps {
-                echo 'Applying Kubernetes manifests...'
                 sh """
                     kubectl apply -f k8s/deployment.yaml
                     kubectl apply -f k8s/ingress.yaml
@@ -43,7 +49,7 @@ pipeline {
 
     post {
         success {
-            echo "Deployment succeeded!"
+            echo "Pipeline and Deployment succeeded!"
         }
         failure {
             echo "Deployment failed. Rolling back..."
